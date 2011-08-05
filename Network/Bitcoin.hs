@@ -1,14 +1,23 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Network.Bitcoin (
     callBitcoinAPI
 )
 where
+import Data.Aeson
 import Data.Maybe (fromJust)
 import Network.Browser
 import Network.HTTP
 import Network.URI (URI,parseURI)
+import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.Text as T
 
-jsonRPC cmd params = "{\"jsonrpc\":\"2.0\",\"method\":\"" ++ cmd ++ "\", \"params\":[], \"id\":1}"
--- [ ("jsonrpc","2.0"),("method",cmd),("params",[]),("id":1) ]
+jsonRPC :: String -> [String] -> String
+jsonRPC cmd params = B.unpack $ encode $ object [
+                "jsonrpc" .= ("2.0"::String),
+                "method"  .= cmd,
+                "params"  .= params,
+                "id"      .= (1::Int)
+              ]
 
 callBitcoinAPI :: String -> String -> String -> String -> [String] -> IO String
 callBitcoinAPI urlString username password command params = do
