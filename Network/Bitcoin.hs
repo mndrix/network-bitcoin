@@ -3,39 +3,62 @@ module Network.Bitcoin (
     callBitcoinAPI
 )
 where
+import Control.Applicative
+import Control.Monad
 import Data.Aeson
+import Data.Attoparsec
 import Data.Maybe (fromJust)
 import Network.Browser
 import Network.HTTP
 import Network.URI (URI,parseURI)
-import qualified Data.ByteString.Lazy.Char8 as B
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 
-jsonRPC :: String -> [String] -> String
-jsonRPC cmd params = B.unpack $ encode $ object [
+data BtcRpcResponse = BtcRpcResponse {
+        btcResult  :: Value,
+        btcError   :: Value
+    }
+    deriving (Show)
+instance FromJSON BtcRpcResponse where
+    parseJSON (Object v) = BtcRpcResponse <$> v .: "result"
+                                          <*> v .: "error"
+    parseJSON _ = mzero
+
+-- encodes an RPC request into a ByteString containing JSON
+jsonRpcReqBody :: String -> [String] -> BL.ByteString
+jsonRpcReqBody cmd params = encode $ object [
                 "jsonrpc" .= ("2.0"::String),
                 "method"  .= cmd,
                 "params"  .= params,
                 "id"      .= (1::Int)
               ]
 
-callBitcoinAPI :: String -> String -> String -> String -> [String] -> IO String
+callBitcoinAPI :: String -> String -> String -> String -> [String] -> IO Value
 callBitcoinAPI urlString username password command params = do
-    (_,res) <- browse $ do
+    (_,httpRes) <- browse $ do
         addAuthority authority
         setAllowBasicAuth True
-        -- TODO "error" is null if no errors
-        -- TODO "error" is hashref if errors (see "code" and "message")
-        -- TODO "result" has data
-        request $ buildRequest urlString $ jsonRPC command params
-    return $ rspBody res
-    where authority = buildAuthority urlString username password
-
+        request $ httpRequest urlString $ jsonRpcReqBody command params
+    -- TODO handle a failed request (what if the daemon is gone?)
+    let res = fromSuccess $ fromJSON $ toValue $ rspBody httpRes
+    case res of
+        BtcRpcResponse {btcError=Null} -> return $ btcResult res
+        -- TODO throw a BitcoinError exception if there's an error
+        BtcRpcResponse {btcError=e}    -> error "TODO make an Exception"
+    where authority     = btcAuthority urlString username password
+          toStrict      = B.concat . BL.toChunks
+          justParseJSON = fromJust . maybeResult . parse json
+          toValue       = justParseJSON . toStrict
+          fromSuccess x =
+            case x of
+                Success a -> a
+                Error s   -> error s
 
 
 -- Internal helper functions to make callBitcoinAPI more readable
-buildAuthority :: String -> String -> String -> Authority
-buildAuthority urlString username password =
+btcAuthority :: String -> String -> String -> Authority
+btcAuthority urlString username password =
     AuthBasic {
         auRealm    = "jsonrpc",
         auUsername = username,
@@ -43,12 +66,12 @@ buildAuthority urlString username password =
         auSite     = uri
     }
     where uri = fromJust $ parseURI urlString
-buildRequest :: String -> String -> Request String
-buildRequest urlString jsonBody =
+httpRequest :: String -> BL.ByteString -> Request BL.ByteString
+httpRequest urlString jsonBody =
     (postRequest urlString){
         rqBody = jsonBody,
         rqHeaders = [
             mkHeader HdrContentType "application/json",
-            mkHeader HdrContentLength (show $ length jsonBody)
+            mkHeader HdrContentLength (show $ BL.length jsonBody)
         ]
     }
