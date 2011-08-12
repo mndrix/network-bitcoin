@@ -30,7 +30,7 @@ instance FromJSON BitcoinRpcResponse where
     parseJSON _ = mzero
 
 data BitcoinException
-    = BtcApiError Int String
+    = BitcoinApiError Int String
     deriving (Show,Typeable)
 instance Exception BitcoinException
 
@@ -82,7 +82,7 @@ fromSuccess (Success a) = a
 fromSuccess (Error   s) = error s
 
 buildBtcError :: Value -> BitcoinException
-buildBtcError (Object o) = BtcApiError code msg
+buildBtcError (Object o) = BitcoinApiError code msg
     where find k = fromSuccess . fromJSON . fromJust . M.lookup k
           code = find "code" o
           msg  = find "message" o
