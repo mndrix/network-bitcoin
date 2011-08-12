@@ -19,20 +19,20 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as M
 import qualified Data.Text as T
 
-data BtcRpcResponse = BtcRpcResponse {
+data BitcoinRpcResponse = BitcoinRpcResponse {
         btcResult  :: Value,
         btcError   :: Value
     }
     deriving (Show)
-instance FromJSON BtcRpcResponse where
-    parseJSON (Object v) = BtcRpcResponse <$> v .: "result"
+instance FromJSON BitcoinRpcResponse where
+    parseJSON (Object v) = BitcoinRpcResponse <$> v .: "result"
                                           <*> v .: "error"
     parseJSON _ = mzero
 
-data BtcException
+data BitcoinException
     = BtcApiError Int String
     deriving (Show,Typeable)
-instance Exception BtcException
+instance Exception BitcoinException
 
 -- encodes an RPC request into a ByteString containing JSON
 jsonRpcReqBody :: String -> [String] -> BL.ByteString
@@ -52,8 +52,8 @@ callBitcoinAPI urlString username password command params = do
     -- TODO handle a failed request (what if the daemon is gone?)
     let res = fromSuccess $ fromJSON $ toValue $ rspBody httpRes
     case res of
-        BtcRpcResponse {btcError=Null} -> return $ btcResult res
-        BtcRpcResponse {btcError=e}    -> throw $ buildBtcError e
+        BitcoinRpcResponse {btcError=Null} -> return $ btcResult res
+        BitcoinRpcResponse {btcError=e}    -> throw $ buildBtcError e
     where authority     = btcAuthority urlString username password
           toStrict      = B.concat . BL.toChunks
           justParseJSON = fromJust . maybeResult . parse json
@@ -82,7 +82,7 @@ httpRequest urlString jsonBody =
 fromSuccess (Success a) = a
 fromSuccess (Error   s) = error s
 
-buildBtcError :: Value -> BtcException
+buildBtcError :: Value -> BitcoinException
 buildBtcError (Object o) = BtcApiError code msg
     where find k = fromSuccess . fromJSON . fromJust . M.lookup k
           code = find "code" o
