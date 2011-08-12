@@ -49,7 +49,6 @@ callBitcoinAPI urlString username password command params = do
         addAuthority authority
         setAllowBasicAuth True
         request $ httpRequest urlString $ jsonRpcReqBody command params
-    -- TODO handle a failed request (what if the daemon is gone?)
     let res = fromSuccess $ fromJSON $ toValue $ rspBody httpRes
     case res of
         BitcoinRpcResponse {btcError=Null} -> return $ btcResult res
