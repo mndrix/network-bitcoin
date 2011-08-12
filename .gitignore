@@ -1,3 +1,5 @@
 *.swp
 dist/
 Setup.hs
+Network/Bitcoin.hi
+Network/Bitcoin.o
