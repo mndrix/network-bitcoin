@@ -50,11 +50,6 @@ callBitcoinAPI urlString username password command params = do
           toStrict      = B.concat . BL.toChunks
           justParseJSON = fromJust . maybeResult . parse json
           toValue       = justParseJSON . toStrict
-          fromSuccess x =
-            case x of
-                Success a -> a
-                Error s   -> error s
-
 
 -- Internal helper functions to make callBitcoinAPI more readable
 btcAuthority :: String -> String -> String -> Authority
@@ -75,3 +70,6 @@ httpRequest urlString jsonBody =
             mkHeader HdrContentLength (show $ BL.length jsonBody)
         ]
     }
+
+fromSuccess (Success a) = a
+fromSuccess (Error   s) = error s
