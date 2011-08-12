@@ -63,6 +63,7 @@ callBitcoinAPI :: String  -- ^ URL of the Bitcoin daemon, including port number
                -> IO Value
 callBitcoinAPI urlString username password command params = do
     (_,httpRes) <- browse $ do
+        setOutHandler $ const $ return ()
         addAuthority authority
         setAllowBasicAuth True
         request $ httpRequest urlString $ jsonRpcReqBody command params
