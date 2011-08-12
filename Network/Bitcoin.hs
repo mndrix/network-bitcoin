@@ -1,18 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module Network.Bitcoin (
     callBitcoinAPI
 )
 where
 import Control.Applicative
+import Control.Exception
 import Control.Monad
 import Data.Aeson
 import Data.Attoparsec
 import Data.Maybe (fromJust)
+import Data.Typeable
 import Network.Browser
 import Network.HTTP
 import Network.URI (URI,parseURI)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.Map as M
 import qualified Data.Text as T
 
 data BtcRpcResponse = BtcRpcResponse {
@@ -24,6 +28,11 @@ instance FromJSON BtcRpcResponse where
     parseJSON (Object v) = BtcRpcResponse <$> v .: "result"
                                           <*> v .: "error"
     parseJSON _ = mzero
+
+data BtcException
+    = BtcApiError Int String
+    deriving (Show,Typeable)
+instance Exception BtcException
 
 -- encodes an RPC request into a ByteString containing JSON
 jsonRpcReqBody :: String -> [String] -> BL.ByteString
@@ -44,8 +53,7 @@ callBitcoinAPI urlString username password command params = do
     let res = fromSuccess $ fromJSON $ toValue $ rspBody httpRes
     case res of
         BtcRpcResponse {btcError=Null} -> return $ btcResult res
-        -- TODO throw a BitcoinError exception if there's an error
-        BtcRpcResponse {btcError=e}    -> error "TODO make an Exception"
+        BtcRpcResponse {btcError=e}    -> throw $ buildBtcError e
     where authority     = btcAuthority urlString username password
           toStrict      = B.concat . BL.toChunks
           justParseJSON = fromJust . maybeResult . parse json
@@ -73,3 +81,10 @@ httpRequest urlString jsonBody =
 
 fromSuccess (Success a) = a
 fromSuccess (Error   s) = error s
+
+buildBtcError :: Value -> BtcException
+buildBtcError (Object o) = BtcApiError code msg
+    where find k = fromSuccess . fromJSON . fromJust . M.lookup k
+          code = find "code" o
+          msg  = find "message" o
+buildBtcError _ = error "Need an object to buildBtcError"

@@ -53,6 +53,7 @@ Library
     aeson,
     attoparsec,
     bytestring,
+    containers,
     HTTP >= 4000,
     network,
     text,
