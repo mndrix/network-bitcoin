@@ -63,14 +63,14 @@ Library
   
   -- Packages needed in order to build this package.
   Build-depends:       
-    aeson,
-    attoparsec,
-    bytestring,
-    containers,
-    HTTP >= 4000,
-    network,
-    text,
-    base
+    aeson == 0.3.*,
+    attoparsec >= 0.7 && < 0.10,
+    bytestring == 0.9.*,
+    containers == 0.4.*,
+    HTTP == 4000.*,
+    network == 2.3.*,
+    text == 0.11.*,
+    base == 4.3.*
   
   -- Modules not exported by this package.
   -- Other-modules:       
