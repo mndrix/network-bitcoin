@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 module Network.Bitcoin (
-    callBitcoinAPI
+    callBitcoinAPI,
+    BitcoinException(..)
 )
 where
 import Control.Applicative
@@ -29,6 +30,9 @@ instance FromJSON BitcoinRpcResponse where
                                           <*> v .: "error"
     parseJSON _ = mzero
 
+-- |A 'BitcoinException' is thrown when 'callBitcoinAPI' encounters an
+-- error.  The API error code is represented as an @Int@, the message as
+-- a @String@.
 data BitcoinException
     = BitcoinApiError Int String
     deriving (Show,Typeable)
@@ -43,7 +47,20 @@ jsonRpcReqBody cmd params = encode $ object [
                 "id"      .= (1::Int)
               ]
 
-callBitcoinAPI :: String -> String -> String -> String -> [String] -> IO Value
+-- |'callBitcoinAPI' is used to execute an authenticated API request
+-- against a Bitcoin daemon.  The first three arguments specify
+-- authentication details (url, username, password).
+-- They're usually curried for convenience:
+--
+-- > callBTC = callBitcoinAPI "http://127.0.0.1:8332" "user" "password"
+--
+-- On error, throws a 'BitcoinException'
+callBitcoinAPI :: String  -- ^ URL of the Bitcoin daemon, including port number
+               -> String  -- ^ username
+               -> String  -- ^ password
+               -> String  -- ^ command name
+               -> [String] -- ^ command arguments
+               -> IO Value
 callBitcoinAPI urlString username password command params = do
     (_,httpRes) <- browse $ do
         addAuthority authority

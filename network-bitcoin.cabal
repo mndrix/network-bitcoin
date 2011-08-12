@@ -10,10 +10,23 @@ Name:                network-bitcoin
 Version:             0.1
 
 -- A short (one-line) description of the package.
-Synopsis:            Interface for the Bitcoin API
+Synopsis:            Interface to the Bitcoin API
 
 -- A longer description of the package.
--- Description:         
+Description:
+    This can be used to send Bitcoins, query balances, etc.  It
+    requires the Bitcoin daemon to be running and accessible via
+    HTTP.
+    .
+    > import Network.Bitcoin
+    > import Data.Aeson
+    >
+    > callBTC = callBitcoinAPI "http://127.0.0.1:8332" "user" "password"
+    > main = do
+    >    (Number balance) <- callBTC "getbalance" []
+    >    putStrLn $ (show balance) ++ " BTC"
+    .
+    To learn more about Bitcoin, see <http://www.bitcoin.org>.
 
 -- The license under which the package is released.
 License:             BSD3
