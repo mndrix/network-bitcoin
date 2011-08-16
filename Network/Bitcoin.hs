@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings,DeriveDataTypeable #-}
 module Network.Bitcoin (
     callBitcoinAPI,
     BitcoinException(..)
