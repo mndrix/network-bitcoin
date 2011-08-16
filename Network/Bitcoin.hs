@@ -39,7 +39,7 @@ data BitcoinException
 instance Exception BitcoinException
 
 -- encodes an RPC request into a ByteString containing JSON
-jsonRpcReqBody :: String -> [String] -> BL.ByteString
+jsonRpcReqBody :: String -> [Value] -> BL.ByteString
 jsonRpcReqBody cmd params = encode $ object [
                 "jsonrpc" .= ("2.0"::String),
                 "method"  .= cmd,
@@ -59,7 +59,7 @@ callBitcoinAPI :: String  -- ^ URL of the Bitcoin daemon, including port number
                -> String  -- ^ username
                -> String  -- ^ password
                -> String  -- ^ command name
-               -> [String] -- ^ command arguments
+               -> [Value] -- ^ command arguments
                -> IO Value
 callBitcoinAPI urlString username password command params = do
     (_,httpRes) <- browse $ do
