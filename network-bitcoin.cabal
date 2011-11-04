@@ -21,10 +21,10 @@ Description:
     > import Network.Bitcoin
     > import Data.Aeson
     >
-    > callBTC = callBitcoinAPI "http://127.0.0.1:8332" "user" "password"
+    > callBtc = callBitcoinApi $ BitcoinAuth "http://127.0.0.1:8332" "user" "password"
     > main = do
-    >    (Number balance) <- callBTC "getbalance" []
-    >    putStrLn $ (show balance) ++ " BTC"
+    >    (Number balance) <- callBtc "getbalance" []
+    >    putStrLn $ show balance ++ " BTC"
     .
     To learn more about Bitcoin, see <http://www.bitcoin.org>.
 
@@ -58,6 +58,7 @@ Cabal-version:       >=1.2
 
 Library
   hs-source-dirs: src
+  ghc-options: -Wall -Werror
 
   -- Modules exported by the library.
   Exposed-modules:

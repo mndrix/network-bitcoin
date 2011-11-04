@@ -1,5 +1,8 @@
+*.hi
+*.o
 *.swp
-dist/
+.dist-scion/
+.hsproject
+.project
 Setup.hs
-Network/Bitcoin.hi
-Network/Bitcoin.o
+dist/

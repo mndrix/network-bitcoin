@@ -1,9 +1,14 @@
 {-# LANGUAGE OverloadedStrings,DeriveDataTypeable #-}
-module Network.Bitcoin (
-    callBitcoinAPI,
-    BitcoinException(..)
-)
-where
+-- | Communicate with a Bitcoin daemon over JSON RPC
+module Network.Bitcoin
+    (
+        -- * Types
+      BitcoinAuth(..)
+    , BitcoinException(..)
+
+    -- * Low-level API
+    , callBitcoinApi
+    ) where
 import Control.Applicative
 import Control.Exception
 import Control.Monad
@@ -12,12 +17,20 @@ import Data.Attoparsec
 import Data.Maybe (fromJust)
 import Data.Typeable
 import Network.Browser
-import Network.HTTP
-import Network.URI (URI,parseURI)
+import Network.HTTP hiding (password)
+import Network.URI (parseURI)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as M
-import qualified Data.Text as T
+
+-- | 'BitcoinAuth' describes authentication credentials for
+-- making API requests to the Bitcoin daemon
+data BitcoinAuth = BitcoinAuth
+    { rpcUrl :: String      -- ^ URL, with port, where bitcoind listens
+    , rpcUser :: String     -- ^ same as bitcoind's 'rpcuser' config
+    , rpcPassword :: String -- ^ same as bitcoind's 'rpcpassword' config
+    }
+    deriving (Show)
 
 data BitcoinRpcResponse = BitcoinRpcResponse {
         btcResult  :: Value,
@@ -29,7 +42,7 @@ instance FromJSON BitcoinRpcResponse where
                                           <*> v .: "error"
     parseJSON _ = mzero
 
--- |A 'BitcoinException' is thrown when 'callBitcoinAPI' encounters an
+-- |A 'BitcoinException' is thrown when 'callBitcoinApi' encounters an
 -- error.  The API error code is represented as an @Int@, the message as
 -- a @String@.
 data BitcoinException
@@ -46,21 +59,24 @@ jsonRpcReqBody cmd params = encode $ object [
                 "id"      .= (1::Int)
               ]
 
--- |'callBitcoinAPI' is used to execute an authenticated API request
--- against a Bitcoin daemon.  The first three arguments specify
--- authentication details (url, username, password).
--- They're usually curried for convenience:
+-- |'callBitcoinApi' is a low-level interface for making authenticated API
+-- calls to a Bitcoin daemon.  The first argument specifies
+-- authentication details (URL, username, password) and is often
+-- curried for convenience:
 --
--- > callBTC = callBitcoinAPI "http://127.0.0.1:8332" "user" "password"
+-- > callBtc = callBitcoinApi $ BitcoinAuth "http://127.0.0.1:8332" "user" "password"
+--
+-- The second argument is the command name.  The third argument provides
+-- parameters for the API call.
+--
+-- > let result = callBtc "getbalance" ["account-name", Number 6]
 --
 -- On error, throws a 'BitcoinException'
-callBitcoinAPI :: String  -- ^ URL of the Bitcoin daemon, including port number
-               -> String  -- ^ username
-               -> String  -- ^ password
+callBitcoinApi :: BitcoinAuth  -- ^ authentication credentials for bitcoind
                -> String  -- ^ command name
                -> [Value] -- ^ command arguments
                -> IO Value
-callBitcoinAPI urlString username password command params = do
+callBitcoinApi auth command params = do
     (_,httpRes) <- browse $ do
         setOutHandler $ const $ return ()
         addAuthority authority
@@ -70,14 +86,15 @@ callBitcoinAPI urlString username password command params = do
     case res of
         BitcoinRpcResponse {btcError=Null} -> return $ btcResult res
         BitcoinRpcResponse {btcError=e}    -> throw $ buildBtcError e
-    where authority     = btcAuthority urlString username password
+    where authority     = httpAuthority auth
+          urlString     = rpcUrl auth
           toStrict      = B.concat . BL.toChunks
           justParseJSON = fromJust . maybeResult . parse json
           toValue       = justParseJSON . toStrict
 
--- Internal helper functions to make callBitcoinAPI more readable
-btcAuthority :: String -> String -> String -> Authority
-btcAuthority urlString username password =
+-- Internal helper functions to make callBitcoinApi more readable
+httpAuthority :: BitcoinAuth -> Authority
+httpAuthority (BitcoinAuth urlString username password) =
     AuthBasic {
         auRealm    = "jsonrpc",
         auUsername = username,
@@ -95,6 +112,7 @@ httpRequest urlString jsonBody =
         ]
     }
 
+fromSuccess :: Data.Aeson.Result t -> t
 fromSuccess (Success a) = a
 fromSuccess (Error   s) = error s
 
