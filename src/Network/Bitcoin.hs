@@ -4,6 +4,7 @@ module Network.Bitcoin
     (
         -- * Types
       BitcoinAuth(..)
+    , BitcoinAmount
     , BitcoinException(..)
 
     -- * Low-level API
@@ -14,6 +15,7 @@ import Control.Exception
 import Control.Monad
 import Data.Aeson
 import Data.Attoparsec
+import Data.Fixed
 import Data.Maybe (fromJust)
 import Data.Typeable
 import Network.Browser
@@ -22,6 +24,15 @@ import Network.URI (parseURI)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as M
+
+
+-- Define Bitcoin's internal precision
+data Satoshi = Satoshi
+instance HasResolution Satoshi where
+    resolution _ = 10^(8::Integer)
+
+-- | Fixed precision Bitcoin arithmetic (to avoid floating point errors)
+type BitcoinAmount = Fixed Satoshi
 
 -- | 'BitcoinAuth' describes authentication credentials for
 -- making API requests to the Bitcoin daemon
