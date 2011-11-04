@@ -57,6 +57,8 @@ Cabal-version:       >=1.2
 
 
 Library
+  hs-source-dirs: src
+
   -- Modules exported by the library.
   Exposed-modules:
     Network.Bitcoin
