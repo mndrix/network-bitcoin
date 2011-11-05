@@ -11,6 +11,9 @@ module Network.Bitcoin
     , getBalance
     , getBlockCount
     , getBlockNumber
+    , getConnectionCount
+    , getDifficulty
+    , getHashesPerSec
 
     -- * Low-level API
     , callBitcoinApi
@@ -156,6 +159,9 @@ instance FromNumber BitcoinAmount where
 instance FromNumber Integer where
     fromNumber (I i) = i
     fromNumber (D d) = round d
+instance FromNumber Double where
+    fromNumber (I i) = fromInteger i
+    fromNumber (D d) = d
 
 callNumber :: FromNumber a => String -> [Value] -> BitcoinAuth -> IO a
 callNumber cmd args auth = do
@@ -178,3 +184,17 @@ getBlockCount = callNumber "getblockcount" []
 -- | Returns the block number of the latest block in the longest block chain
 getBlockNumber :: BitcoinAuth -> IO Integer
 getBlockNumber = callNumber "getblocknumber" []
+
+-- | Returns the number of connections to other nodes
+getConnectionCount :: BitcoinAuth -> IO Integer
+getConnectionCount = callNumber "getconnectioncount" []
+
+-- | Returns the proof-of-work difficulty as a multiple of the minimum
+-- difficulty
+getDifficulty :: BitcoinAuth -> IO Double
+getDifficulty = callNumber "getdifficulty" []
+
+-- | Returns a recent hashes per second performance measurement while
+-- generating
+getHashesPerSec :: BitcoinAuth -> IO Integer
+getHashesPerSec = callNumber "gethashespersec" []
