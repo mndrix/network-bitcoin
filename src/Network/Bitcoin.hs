@@ -157,25 +157,24 @@ instance FromNumber Integer where
     fromNumber (I i) = i
     fromNumber (D d) = round d
 
+callNumber :: FromNumber a => String -> [Value] -> BitcoinAuth -> IO a
+callNumber cmd args auth = do
+    (Number n) <- callBitcoinApi auth cmd args
+    return $ fromNumber n
+
 -- | Returns the balance of a specific Bitcoin account
 getBalance :: BitcoinAuth
            -> AccountName
            -> MinConf
            -> IO BitcoinAmount
-getBalance auth acct minconf = do
-    (Number balance) <- callBitcoinApi auth "getbalance" args
-    return $ fromNumber balance
+getBalance auth acct minconf = callNumber "getbalance" args auth
   where
     args = [ String $ fromString acct, Number $ fromInteger minconf ]
 
 -- | Returns the number of blocks in the longest block chain
 getBlockCount :: BitcoinAuth -> IO Integer
-getBlockCount auth = do
-    (Number count) <- callBitcoinApi auth "getblockcount" []
-    return $ fromNumber count
+getBlockCount = callNumber "getblockcount" []
 
 -- | Returns the block number of the latest block in the longest block chain
 getBlockNumber :: BitcoinAuth -> IO Integer
-getBlockNumber auth = do
-    (Number count) <- callBitcoinApi auth "getblocknumber" []
-    return $ fromNumber count
+getBlockNumber = callNumber "getblocknumber" []
