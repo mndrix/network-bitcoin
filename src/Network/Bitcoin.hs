@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings,DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings,DeriveDataTypeable,TypeSynonymInstances #-}
 -- | Communicate with a Bitcoin daemon over JSON RPC
 module Network.Bitcoin
     (
@@ -146,17 +146,15 @@ buildBtcError (Object o) = BitcoinApiError code msg
           msg  = find "message" o
 buildBtcError _ = error "Need an object to buildBtcError"
 
--- Minimize rounding troubles when converting Attoparsec numbers
--- into Bitcoin amounts
-n2btc :: Number -> BitcoinAmount
-n2btc (I i) = fromInteger i
-n2btc (D d) = fromRational $ toRational d
-
--- Convert JSON numbers into integers.
--- The D case could probably even "error"
-n2i :: Number -> Integer
-n2i (I i) = i
-n2i (D d) = round d
+-- Convert JSON numeric values to more specific numeric types
+class FromNumber a where
+    fromNumber :: Number -> a
+instance FromNumber BitcoinAmount where
+    fromNumber (I i) = fromInteger i
+    fromNumber (D d) = fromRational $ toRational d
+instance FromNumber Integer where
+    fromNumber (I i) = i
+    fromNumber (D d) = round d
 
 -- | Returns the balance of a specific Bitcoin account
 getBalance :: BitcoinAuth
@@ -165,7 +163,7 @@ getBalance :: BitcoinAuth
            -> IO BitcoinAmount
 getBalance auth acct minconf = do
     (Number balance) <- callBitcoinApi auth "getbalance" args
-    return $ n2btc balance
+    return $ fromNumber balance
   where
     args = [ String $ fromString acct, Number $ fromInteger minconf ]
 
@@ -173,4 +171,4 @@ getBalance auth acct minconf = do
 getBlockCount :: BitcoinAuth -> IO Integer
 getBlockCount auth = do
     (Number count) <- callBitcoinApi auth "getblockcount" []
-    return $ n2i count
+    return $ fromNumber count
