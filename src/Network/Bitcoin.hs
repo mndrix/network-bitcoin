@@ -10,6 +10,7 @@ module Network.Bitcoin
     -- * Individual API methods
     , getBalance
     , getBlockCount
+    , getBlockNumber
 
     -- * Low-level API
     , callBitcoinApi
@@ -171,4 +172,10 @@ getBalance auth acct minconf = do
 getBlockCount :: BitcoinAuth -> IO Integer
 getBlockCount auth = do
     (Number count) <- callBitcoinApi auth "getblockcount" []
+    return $ fromNumber count
+
+-- | Returns the block number of the latest block in the longest block chain
+getBlockNumber :: BitcoinAuth -> IO Integer
+getBlockNumber auth = do
+    (Number count) <- callBitcoinApi auth "getblocknumber" []
     return $ fromNumber count
