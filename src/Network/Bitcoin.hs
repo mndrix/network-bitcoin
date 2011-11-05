@@ -7,6 +7,9 @@ module Network.Bitcoin
     , BitcoinAmount
     , BitcoinException(..)
 
+    -- * Individual API methods
+    , getBalance
+
     -- * Low-level API
     , callBitcoinApi
     ) where
@@ -15,8 +18,10 @@ import Control.Exception
 import Control.Monad
 import Data.Aeson
 import Data.Attoparsec
+import Data.Attoparsec.Number
 import Data.Fixed
 import Data.Maybe (fromJust)
+import Data.String (fromString)
 import Data.Typeable
 import Network.Browser
 import Network.HTTP hiding (password)
@@ -33,6 +38,12 @@ instance HasResolution Satoshi where
 
 -- | Fixed precision Bitcoin arithmetic (to avoid floating point errors)
 type BitcoinAmount = Fixed Satoshi
+
+-- | Name of a Bitcoin wallet account
+type AccountName = String
+
+-- | Minimum number of confirmations for a payment
+type MinConf     = Integer
 
 -- | 'BitcoinAuth' describes authentication credentials for
 -- making API requests to the Bitcoin daemon
@@ -133,3 +144,20 @@ buildBtcError (Object o) = BitcoinApiError code msg
           code = find "code" o
           msg  = find "message" o
 buildBtcError _ = error "Need an object to buildBtcError"
+
+-- Minimize rounding troubles when converting Attoparsec numbers
+-- into Bitcoin amounts
+n2btc :: Number -> BitcoinAmount
+n2btc (I i) = fromInteger i
+n2btc (D d) = fromRational $ toRational d
+
+-- | Returns the balance of a specific Bitcoin account
+getBalance :: BitcoinAuth
+           -> AccountName
+           -> MinConf
+           -> IO BitcoinAmount
+getBalance auth acct minconf = do
+    (Number balance) <- callBitcoinApi auth "getbalance" args
+    return $ n2btc balance
+  where
+    args = [ String $ fromString acct, Number $ fromInteger minconf ]
