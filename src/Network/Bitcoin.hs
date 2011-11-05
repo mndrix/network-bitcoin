@@ -9,6 +9,7 @@ module Network.Bitcoin
 
     -- * Individual API methods
     , getBalance
+    , getBlockCount
 
     -- * Low-level API
     , callBitcoinApi
@@ -151,6 +152,12 @@ n2btc :: Number -> BitcoinAmount
 n2btc (I i) = fromInteger i
 n2btc (D d) = fromRational $ toRational d
 
+-- Convert JSON numbers into integers.
+-- The D case could probably even "error"
+n2i :: Number -> Integer
+n2i (I i) = i
+n2i (D d) = round d
+
 -- | Returns the balance of a specific Bitcoin account
 getBalance :: BitcoinAuth
            -> AccountName
@@ -161,3 +168,9 @@ getBalance auth acct minconf = do
     return $ n2btc balance
   where
     args = [ String $ fromString acct, Number $ fromInteger minconf ]
+
+-- | Returns the number of blocks in the longest block chain
+getBlockCount :: BitcoinAuth -> IO Integer
+getBlockCount auth = do
+    (Number count) <- callBitcoinApi auth "getblockcount" []
+    return $ n2i count
