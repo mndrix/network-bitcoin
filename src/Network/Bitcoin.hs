@@ -2,7 +2,7 @@
 -- | Communicate with a Bitcoin daemon over JSON RPC
 module Network.Bitcoin
     (
-        -- * Types
+    -- * Types
       BitcoinAuth(..)
     , BitcoinAmount
     , BitcoinException(..)
