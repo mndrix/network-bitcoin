@@ -20,7 +20,6 @@ module Network.Bitcoin
     -- * Individual API methods
     , getBalance
     , getBlockCount
-    , getBlockNumber
     , getConnectionCount
     , getDifficulty
     , getGenerate
@@ -212,10 +211,6 @@ getBalance auth acct minconf = callNumber "getbalance" args auth
 -- | Returns the number of blocks in the longest block chain
 getBlockCount :: Auth -> IO Integer
 getBlockCount = callNumber "getblockcount" []
-
--- | Returns the block number of the latest block in the longest block chain
-getBlockNumber :: Auth -> IO Integer
-getBlockNumber = callNumber "getblocknumber" []
 
 -- | Returns the number of connections to other nodes
 getConnectionCount :: Auth -> IO Integer
