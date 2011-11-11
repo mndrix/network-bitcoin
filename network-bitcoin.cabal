@@ -10,7 +10,7 @@ Name:                network-bitcoin
 Version:             0.1.0
 
 -- A short (one-line) description of the package.
-Synopsis:            Interface to the Bitcoin API
+Synopsis:            Interface with Bitcoin RPC
 
 -- A longer description of the package.
 Description:
@@ -19,12 +19,12 @@ Description:
     HTTP.
     .
     > import Network.Bitcoin
-    > import Data.Aeson
     >
-    > callBtc = callBitcoinApi $ BitcoinAuth "http://127.0.0.1:8332" "user" "password"
     > main = do
-    >    (Number balance) <- callBtc "getbalance" []
+    >    balance <- getBalance auth
     >    putStrLn $ show balance ++ " BTC"
+    >  where
+    >    auth = Auth "http://127.0.0.1:8332" "user" "password"
     .
     To learn more about Bitcoin, see <http://www.bitcoin.org>.
 

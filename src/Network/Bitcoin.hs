@@ -8,13 +8,13 @@ module Network.Bitcoin
       Auth(..)
     , Address
     , mkAddress
+    , Amount
     , Account
     , MinConf
     , AddressValidation
     , isValid
     , isMine
     , account
-    , Amount
     , BitcoinException(..)
 
     -- * Individual API methods
@@ -27,8 +27,8 @@ module Network.Bitcoin
     , getHashesPerSec
     , getReceivedByAccount
     , getReceivedByAddress
-    , isValidAddress
     , validateAddress
+    , isValidAddress
 
     -- * Low-level API
     , callApi
@@ -53,13 +53,12 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as M
 import qualified Data.Text as T
 
-
 -- Define Bitcoin's internal precision
 data Satoshi = Satoshi
 instance HasResolution Satoshi where
     resolution _ = 10^(8::Integer)
 
--- | Fixed precision Bitcoin arithmetic (to avoid floating point errors)
+-- | Fixed precision Bitcoin amount (to avoid floating point errors)
 type Amount = Fixed Satoshi
 
 -- | Name of a Bitcoin wallet account
@@ -87,7 +86,7 @@ instance FromJSON BitcoinRpcResponse where
                                           <*> v .: "error"
     parseJSON _ = mzero
 
--- |A 'BitcoinException' is thrown when 'callBitcoinApi' encounters an
+-- |A 'BitcoinException' is thrown when 'callApi' encounters an
 -- error.  The API error code is represented as an @Int@, the message as
 -- a @String@.
 data BitcoinException
@@ -236,8 +235,8 @@ getGenerate = callBool "getgenerate" []
 getHashesPerSec :: Auth -> IO Integer
 getHashesPerSec = callNumber "gethashespersec" []
 
--- | Returns the total amount received by addresses with the given
--- account in transactions with at least 'minconf' confirmations
+-- | Returns the total amount received by addresses with
+-- @account@ in transactions with at least @minconf@ confirmations
 getReceivedByAccount :: Auth
                      -> Account
                      -> MinConf
@@ -279,7 +278,6 @@ validateAddress auth addr = do
     str  d k r = maybe d (\(String t)->T.unpack t) $ M.lookup k r
 
 -- | Returns true if the RPC says the address is valid.
--- (This function only makes sense until 'mkAddress' does
--- full address verification)
+-- Use this function until 'mkAddress' verifies address checksums
 isValidAddress :: Auth -> Address -> IO Bool
 isValidAddress auth addr = validateAddress auth addr >>= return . isValid
