@@ -5,16 +5,16 @@
 module Network.Bitcoin
     (
     -- * Types
-      BitcoinAuth(..)
+      Auth(..)
     , Address
     , mkAddress
-    , AccountName
+    , Account
     , MinConf
     , AddressValidation
     , isValid
     , isMine
     , account
-    , BitcoinAmount
+    , Amount
     , BitcoinException(..)
 
     -- * Individual API methods
@@ -31,7 +31,7 @@ module Network.Bitcoin
     , validateAddress
 
     -- * Low-level API
-    , callBitcoinApi
+    , callApi
     ) where
 import Network.Bitcoin.Address
 
@@ -60,17 +60,17 @@ instance HasResolution Satoshi where
     resolution _ = 10^(8::Integer)
 
 -- | Fixed precision Bitcoin arithmetic (to avoid floating point errors)
-type BitcoinAmount = Fixed Satoshi
+type Amount = Fixed Satoshi
 
 -- | Name of a Bitcoin wallet account
-type AccountName = String
+type Account = String
 
 -- | Minimum number of confirmations for a payment
 type MinConf     = Integer
 
--- | 'BitcoinAuth' describes authentication credentials for
+-- | 'Auth' describes authentication credentials for
 -- making API requests to the Bitcoin daemon
-data BitcoinAuth = BitcoinAuth
+data Auth = Auth
     { rpcUrl :: String      -- ^ URL, with port, where bitcoind listens
     , rpcUser :: String     -- ^ same as bitcoind's 'rpcuser' config
     , rpcPassword :: String -- ^ same as bitcoind's 'rpcpassword' config
@@ -104,12 +104,12 @@ jsonRpcReqBody cmd params = encode $ object [
                 "id"      .= (1::Int)
               ]
 
--- |'callBitcoinApi' is a low-level interface for making authenticated API
+-- |'callApi' is a low-level interface for making authenticated API
 -- calls to a Bitcoin daemon.  The first argument specifies
 -- authentication details (URL, username, password) and is often
 -- curried for convenience:
 --
--- > callBtc = callBitcoinApi $ BitcoinAuth "http://127.0.0.1:8332" "user" "password"
+-- > callBtc = callApi $ Auth "http://127.0.0.1:8332" "user" "password"
 --
 -- The second argument is the command name.  The third argument provides
 -- parameters for the API call.
@@ -117,11 +117,11 @@ jsonRpcReqBody cmd params = encode $ object [
 -- > let result = callBtc "getbalance" ["account-name", Number 6]
 --
 -- On error, throws a 'BitcoinException'
-callBitcoinApi :: BitcoinAuth  -- ^ authentication credentials for bitcoind
+callApi :: Auth  -- ^ authentication credentials for bitcoind
                -> String  -- ^ command name
                -> [Value] -- ^ command arguments
                -> IO Value
-callBitcoinApi auth command params = do
+callApi auth command params = do
     (_,httpRes) <- browse $ do
         setOutHandler $ const $ return ()
         addAuthority authority
@@ -137,9 +137,9 @@ callBitcoinApi auth command params = do
           justParseJSON = fromJust . maybeResult . parse json
           toVal         = justParseJSON . toStrict
 
--- Internal helper functions to make callBitcoinApi more readable
-httpAuthority :: BitcoinAuth -> Authority
-httpAuthority (BitcoinAuth urlString username password) =
+-- Internal helper functions to make callApi more readable
+httpAuthority :: Auth -> Authority
+httpAuthority (Auth urlString username password) =
     AuthBasic {
         auRealm    = "jsonrpc",
         auUsername = username,
@@ -171,7 +171,7 @@ buildBtcError _ = error "Need an object to buildBtcError"
 -- Convert JSON numeric values to more specific numeric types
 class FromNumber a where
     fromNumber :: Number -> a
-instance FromNumber BitcoinAmount where
+instance FromNumber Amount where
     fromNumber (I i) = fromInteger i
     fromNumber (D d) = fromRational $ toRational d
 instance FromNumber Integer where
@@ -188,87 +188,87 @@ instance ToValue Address where
     toValue addr = String $ fromString $ show addr
 instance ToValue MinConf where
     toValue conf = Number $ fromInteger conf
-instance ToValue AccountName where
+instance ToValue Account where
     toValue acct = String $ fromString acct
 
-callNumber :: FromNumber a => String -> [Value] -> BitcoinAuth -> IO a
+callNumber :: FromNumber a => String -> [Value] -> Auth -> IO a
 callNumber cmd args auth = do
-    (Number n) <- callBitcoinApi auth cmd args
+    (Number n) <- callApi auth cmd args
     return $ fromNumber n
 
-callBool :: String -> [Value] -> BitcoinAuth -> IO Bool
+callBool :: String -> [Value] -> Auth -> IO Bool
 callBool cmd args auth = do
-    (Bool b) <- callBitcoinApi auth cmd args
+    (Bool b) <- callApi auth cmd args
     return b
 
 -- | Returns the balance of a specific Bitcoin account
-getBalance :: BitcoinAuth
-           -> AccountName
+getBalance :: Auth
+           -> Account
            -> MinConf
-           -> IO BitcoinAmount
+           -> IO Amount
 getBalance auth acct minconf = callNumber "getbalance" args auth
   where
     args = [ String $ fromString acct, Number $ fromInteger minconf ]
 
 -- | Returns the number of blocks in the longest block chain
-getBlockCount :: BitcoinAuth -> IO Integer
+getBlockCount :: Auth -> IO Integer
 getBlockCount = callNumber "getblockcount" []
 
 -- | Returns the block number of the latest block in the longest block chain
-getBlockNumber :: BitcoinAuth -> IO Integer
+getBlockNumber :: Auth -> IO Integer
 getBlockNumber = callNumber "getblocknumber" []
 
 -- | Returns the number of connections to other nodes
-getConnectionCount :: BitcoinAuth -> IO Integer
+getConnectionCount :: Auth -> IO Integer
 getConnectionCount = callNumber "getconnectioncount" []
 
 -- | Returns the proof-of-work difficulty as a multiple of the minimum
 -- difficulty
-getDifficulty :: BitcoinAuth -> IO Double
+getDifficulty :: Auth -> IO Double
 getDifficulty = callNumber "getdifficulty" []
 
 -- | Indicates whether the node is generating or not
-getGenerate :: BitcoinAuth -> IO Bool
+getGenerate :: Auth -> IO Bool
 getGenerate = callBool "getgenerate" []
 
 -- | Returns a recent hashes per second performance measurement while
 -- generating
-getHashesPerSec :: BitcoinAuth -> IO Integer
+getHashesPerSec :: Auth -> IO Integer
 getHashesPerSec = callNumber "gethashespersec" []
 
 -- | Returns the total amount received by addresses with the given
 -- account in transactions with at least 'minconf' confirmations
-getReceivedByAccount :: BitcoinAuth
-                     -> AccountName
+getReceivedByAccount :: Auth
+                     -> Account
                      -> MinConf
-                     -> IO BitcoinAmount
+                     -> IO Amount
 getReceivedByAccount auth acct conf =
     callNumber "getreceivedbyaccount" [toValue acct,toValue conf] auth
 
 -- | Returns the total amount received by an address in transactions
 -- with at least 'minconf' confirmations.
-getReceivedByAddress :: BitcoinAuth
+getReceivedByAddress :: Auth
                      -> Address
                      -> MinConf
-                     -> IO BitcoinAmount
+                     -> IO Amount
 getReceivedByAddress auth addr conf =
     callNumber "getreceivedbyaddress" [toValue addr,toValue conf] auth
 
 -- | Encapsulates address validation results from 'validateAddress'
 data AddressValidation = AddressValidation
-    { isValid :: Bool
-    , isMine  :: Bool
-    , account :: AccountName
+    { isValid :: Bool    -- ^ Is the address valid?
+    , isMine  :: Bool    -- ^ Does the address belong to my wallet?
+    , account :: Account -- ^ To which account does this address belong?
     } deriving (Show)
 
 -- | Return information about an address.
 -- If the address is invalid or doesn't belong to us, the account name
 -- is the empty string.
-validateAddress :: BitcoinAuth
+validateAddress :: Auth
                 -> Address
                 -> IO AddressValidation
 validateAddress auth addr = do
-    (Object result) <- callBitcoinApi auth "validateaddress" [toValue addr]
+    (Object result) <- callApi auth "validateaddress" [toValue addr]
     return AddressValidation
         { isValid = bool False "isvalid" result
         , isMine  = bool False "ismine"  result
@@ -281,5 +281,5 @@ validateAddress auth addr = do
 -- | Returns true if the RPC says the address is valid.
 -- (This function only makes sense until 'mkAddress' does
 -- full address verification)
-isValidAddress :: BitcoinAuth -> Address -> IO Bool
+isValidAddress :: Auth -> Address -> IO Bool
 isValidAddress auth addr = validateAddress auth addr >>= return . isValid
