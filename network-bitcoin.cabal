@@ -63,6 +63,7 @@ Library
   -- Modules exported by the library.
   Exposed-modules:
     Network.Bitcoin
+    Network.Bitcoin.Address
   
   -- Packages needed in order to build this package.
   Build-depends:       

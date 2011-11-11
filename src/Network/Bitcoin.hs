@@ -6,10 +6,10 @@ module Network.Bitcoin
     (
     -- * Types
       BitcoinAuth(..)
-    , BitcoinAddress
+    , Address
+    , mkAddress
     , AccountName
     , MinConf
-    , mkBitcoinAddress
     , AddressValidation
     , isValid
     , isMine
@@ -33,6 +33,8 @@ module Network.Bitcoin
     -- * Low-level API
     , callBitcoinApi
     ) where
+import Network.Bitcoin.Address
+
 import Control.Applicative
 import Control.Exception
 import Control.Monad
@@ -59,22 +61,6 @@ instance HasResolution Satoshi where
 
 -- | Fixed precision Bitcoin arithmetic (to avoid floating point errors)
 type BitcoinAmount = Fixed Satoshi
-
--- | Represents a Bitcoin receiving address.  Construct one with
--- 'mkBitcoinAddress'.
--- (Only performs rudimentary address validation. Until full validation
--- is done, use 'isValidAddress' instead)
-data BitcoinAddress = BitcoinAddress String
-mkBitcoinAddress :: String -> Maybe BitcoinAddress
-mkBitcoinAddress s =
-    if isOK s
-        then Just $ BitcoinAddress s
-        else Nothing
-  where -- TODO perform full address validation (write base58 module first)
-    isOK ('1':_) = (length s == 34)
-    isOK _       = False
-instance Show BitcoinAddress where
-    show (BitcoinAddress s) = s
 
 -- | Name of a Bitcoin wallet account
 type AccountName = String
@@ -198,7 +184,7 @@ instance FromNumber Double where
 -- Class of types that can be converted to a JSON representation
 class ToValue a where
     toValue :: a -> Value
-instance ToValue BitcoinAddress where
+instance ToValue Address where
     toValue addr = String $ fromString $ show addr
 instance ToValue MinConf where
     toValue conf = Number $ fromInteger conf
@@ -262,7 +248,7 @@ getReceivedByAccount auth acct conf =
 -- | Returns the total amount received by an address in transactions
 -- with at least 'minconf' confirmations.
 getReceivedByAddress :: BitcoinAuth
-                     -> BitcoinAddress
+                     -> Address
                      -> MinConf
                      -> IO BitcoinAmount
 getReceivedByAddress auth addr conf =
@@ -279,7 +265,7 @@ data AddressValidation = AddressValidation
 -- If the address is invalid or doesn't belong to us, the account name
 -- is the empty string.
 validateAddress :: BitcoinAuth
-                -> BitcoinAddress
+                -> Address
                 -> IO AddressValidation
 validateAddress auth addr = do
     (Object result) <- callBitcoinApi auth "validateaddress" [toValue addr]
@@ -293,7 +279,7 @@ validateAddress auth addr = do
     str  d k r = maybe d (\(String t)->T.unpack t) $ M.lookup k r
 
 -- | Returns true if the RPC says the address is valid.
--- (This function only makes sense until 'mkBitcoinAddress' does
+-- (This function only makes sense until 'mkAddress' does
 -- full address verification)
-isValidAddress :: BitcoinAuth -> BitcoinAddress -> IO Bool
+isValidAddress :: BitcoinAuth -> Address -> IO Bool
 isValidAddress auth addr = validateAddress auth addr >>= return . isValid
