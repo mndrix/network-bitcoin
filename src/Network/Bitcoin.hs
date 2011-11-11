@@ -15,6 +15,7 @@ module Network.Bitcoin
     , getBlockNumber
     , getConnectionCount
     , getDifficulty
+    , getGenerate
     , getHashesPerSec
     , getReceivedByAccount
     , getReceivedByAddress
@@ -186,6 +187,11 @@ callNumber cmd args auth = do
     (Number n) <- callBitcoinApi auth cmd args
     return $ fromNumber n
 
+callBool :: String -> [Value] -> BitcoinAuth -> IO Bool
+callBool cmd args auth = do
+    (Bool b) <- callBitcoinApi auth cmd args
+    return b
+
 -- | Returns the balance of a specific Bitcoin account
 getBalance :: BitcoinAuth
            -> AccountName
@@ -211,6 +217,10 @@ getConnectionCount = callNumber "getconnectioncount" []
 -- difficulty
 getDifficulty :: BitcoinAuth -> IO Double
 getDifficulty = callNumber "getdifficulty" []
+
+-- | Indicates whether the node is generating or not
+getGenerate :: BitcoinAuth -> IO Bool
+getGenerate = callBool "getgenerate" []
 
 -- | Returns a recent hashes per second performance measurement while
 -- generating
