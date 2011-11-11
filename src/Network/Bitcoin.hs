@@ -5,8 +5,13 @@ module Network.Bitcoin
     -- * Types
       BitcoinAuth(..)
     , BitcoinAddress
+    , AccountName
+    , MinConf
     , mkBitcoinAddress
     , AddressValidation
+    , isValid
+    , isMine
+    , account
     , BitcoinAmount
     , BitcoinException(..)
 
