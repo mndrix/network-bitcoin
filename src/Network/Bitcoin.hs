@@ -19,6 +19,7 @@ module Network.Bitcoin
     , getHashesPerSec
     , getReceivedByAccount
     , getReceivedByAddress
+    , isValidAddress
     , validateAddress
 
     -- * Low-level API
@@ -52,7 +53,9 @@ instance HasResolution Satoshi where
 type BitcoinAmount = Fixed Satoshi
 
 -- | Represents a Bitcoin receiving address.  Construct one with
--- 'mkBitcoinAddress'
+-- 'mkBitcoinAddress'.
+-- (Only performs rudimentary address validation. Until full validation
+-- is done, use 'isValidAddress' instead)
 data BitcoinAddress = BitcoinAddress String
 mkBitcoinAddress :: String -> Maybe BitcoinAddress
 mkBitcoinAddress s =
@@ -274,3 +277,11 @@ validateAddress auth addr = do
                     return (True,True,T.unpack acct)
   where
     vaddr = String $ fromString $ show addr
+
+-- | Returns true if the RPC says the address is valid.
+-- (This function only makes sense until 'mkBitcoinAddress' does
+-- full address verification)
+isValidAddress :: BitcoinAuth -> BitcoinAddress -> IO Bool
+isValidAddress auth addr = validateAddress auth addr >>= isValid
+  where
+    isValid (t,_,_) = return t
