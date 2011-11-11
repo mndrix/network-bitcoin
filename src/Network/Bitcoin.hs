@@ -60,12 +60,12 @@ type BitcoinAmount = Fixed Satoshi
 data BitcoinAddress = BitcoinAddress String
 mkBitcoinAddress :: String -> Maybe BitcoinAddress
 mkBitcoinAddress s =
-    if isValid s
+    if isOK s
         then Just $ BitcoinAddress s
         else Nothing
   where -- TODO perform full address validation (write base58 module first)
-    isValid ('1':_) = (length s == 34)
-    isValid _       = False
+    isOK ('1':_) = (length s == 34)
+    isOK _       = False
 instance Show BitcoinAddress where
     show (BitcoinAddress s) = s
 
