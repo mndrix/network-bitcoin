@@ -134,7 +134,7 @@ callBitcoinApi auth command params = do
         addAuthority authority
         setAllowBasicAuth True
         request $ httpRequest urlString $ jsonRpcReqBody command params
-    let res = fromSuccess $ fromJSON $ toValue $ rspBody httpRes
+    let res = fromSuccess $ fromJSON $ toVal $ rspBody httpRes
     case res of
         BitcoinRpcResponse {btcError=Null} -> return $ btcResult res
         BitcoinRpcResponse {btcError=e}    -> throw $ buildBtcError e
@@ -142,7 +142,7 @@ callBitcoinApi auth command params = do
           urlString     = rpcUrl auth
           toStrict      = B.concat . BL.toChunks
           justParseJSON = fromJust . maybeResult . parse json
-          toValue       = justParseJSON . toStrict
+          toVal         = justParseJSON . toStrict
 
 -- Internal helper functions to make callBitcoinApi more readable
 httpAuthority :: BitcoinAuth -> Authority
