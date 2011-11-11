@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings,DeriveDataTypeable,TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 -- | Communicate with a Bitcoin daemon over JSON RPC
 module Network.Bitcoin
     (
