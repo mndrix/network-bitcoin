@@ -4,6 +4,8 @@ module Network.Bitcoin
     (
     -- * Types
       BitcoinAuth(..)
+    , BitcoinAddress
+    , mkBitcoinAddress
     , BitcoinAmount
     , BitcoinException(..)
 
@@ -43,6 +45,20 @@ instance HasResolution Satoshi where
 
 -- | Fixed precision Bitcoin arithmetic (to avoid floating point errors)
 type BitcoinAmount = Fixed Satoshi
+
+-- | Represents a Bitcoin receiving address.  Construct one with
+-- 'mkBitcoinAddress'
+data BitcoinAddress = BitcoinAddress String
+mkBitcoinAddress :: String -> Maybe BitcoinAddress
+mkBitcoinAddress s =
+    if isValid s
+        then Just $ BitcoinAddress s
+        else Nothing
+  where -- TODO perform full address validation (write base58 module first)
+    isValid ('1':_) = (length s == 34)
+    isValid _       = False
+instance Show BitcoinAddress where
+    show (BitcoinAddress s) = s
 
 -- | Name of a Bitcoin wallet account
 type AccountName = String
