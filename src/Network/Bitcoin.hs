@@ -19,6 +19,7 @@ module Network.Bitcoin
     , getHashesPerSec
     , getReceivedByAccount
     , getReceivedByAddress
+    , validateAddress
 
     -- * Low-level API
     , callBitcoinApi
@@ -39,6 +40,7 @@ import Network.URI (parseURI)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as M
+import qualified Data.Text as T
 
 
 -- Define Bitcoin's internal precision
@@ -250,3 +252,25 @@ getReceivedByAddress auth addr conf =
   where
     vaddr = String $ fromString $ show addr
     vconf = Number $ fromInteger conf
+
+-- | Return information about an address.
+--
+-- > let (isValid,isMine,account) = validateAddress auth address
+--
+-- If the address is invalid or doesn't belong to us, the account name
+-- is the empty string.
+validateAddress :: BitcoinAuth
+                -> BitcoinAddress
+                -> IO (Bool, Bool, AccountName)
+validateAddress auth addr = do
+    (Object result) <- callBitcoinApi auth "validateaddress" [vaddr]
+    case fromJust $ M.lookup "isvalid" result of
+        Bool False -> return (False,False,"")
+        Bool True ->
+            case fromJust $ M.lookup "ismine" result of
+                Bool False -> return (True,False,"")
+                Bool True -> do
+                    let (String acct) = fromJust $ M.lookup "account" result
+                    return (True,True,T.unpack acct)
+  where
+    vaddr = String $ fromString $ show addr
