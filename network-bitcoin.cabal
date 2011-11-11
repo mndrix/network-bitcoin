@@ -35,14 +35,18 @@ License:             BSD3
 License-file:        LICENSE
 
 -- The package author(s).
-Author:              Michael Hendricks
+Author:              Michael Hendricks <michael@ndrix.org>
 
 -- An email address to which users can send suggestions, bug reports,
 -- and patches.
-Maintainer:          michael@ndrix.org
+Maintainer:          Michael Hendricks <michael@ndrix.org>
+
+Stability: experimental
+Homepage: http://github.com/mndrix/network-bitcoin
+Bug-reports: http://github.com/mndrix/network-bitcoin/issues
 
 -- A copyright notice.
--- Copyright:           
+Copyright:           Copyright 2011, Michael Hendricks
 
 Category:            Network
 
@@ -53,12 +57,12 @@ Build-type:          Simple
 -- Extra-source-files:  
 
 -- Constraint on the version of Cabal needed to build this package.
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 
 
 Library
   hs-source-dirs: src
-  ghc-options: -Wall -Werror -fno-warn-unused-binds -fno-warn-incomplete-patterns
+  ghc-options: -Wall -fno-warn-unused-binds -fno-warn-incomplete-patterns
 
   -- Modules exported by the library.
   Exposed-modules:
