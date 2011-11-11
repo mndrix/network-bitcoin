@@ -188,6 +188,16 @@ instance FromNumber Double where
     fromNumber (I i) = fromInteger i
     fromNumber (D d) = d
 
+-- Class of types that can be converted to a JSON representation
+class ToValue a where
+    toValue :: a -> Value
+instance ToValue BitcoinAddress where
+    toValue addr = String $ fromString $ show addr
+instance ToValue MinConf where
+    toValue conf = Number $ fromInteger conf
+instance ToValue AccountName where
+    toValue acct = String $ fromString acct
+
 callNumber :: FromNumber a => String -> [Value] -> BitcoinAuth -> IO a
 callNumber cmd args auth = do
     (Number n) <- callBitcoinApi auth cmd args
@@ -240,10 +250,7 @@ getReceivedByAccount :: BitcoinAuth
                      -> MinConf
                      -> IO BitcoinAmount
 getReceivedByAccount auth acct conf =
-    callNumber "getreceivedbyaccount" [vacct,vconf] auth
-  where
-    vacct = String $ fromString acct
-    vconf = Number $ fromInteger conf
+    callNumber "getreceivedbyaccount" [toValue acct,toValue conf] auth
 
 -- | Returns the total amount received by an address in transactions
 -- with at least 'minconf' confirmations.
@@ -252,10 +259,7 @@ getReceivedByAddress :: BitcoinAuth
                      -> MinConf
                      -> IO BitcoinAmount
 getReceivedByAddress auth addr conf =
-    callNumber "getreceivedbyaddress" [vaddr,vconf] auth
-  where
-    vaddr = String $ fromString $ show addr
-    vconf = Number $ fromInteger conf
+    callNumber "getreceivedbyaddress" [toValue addr,toValue conf] auth
 
 -- | Encapsulates address validation results from 'validateAddress'
 data AddressValidation = AddressValidation
@@ -271,7 +275,7 @@ validateAddress :: BitcoinAuth
                 -> BitcoinAddress
                 -> IO AddressValidation
 validateAddress auth addr = do
-    (Object result) <- callBitcoinApi auth "validateaddress" [vaddr]
+    (Object result) <- callBitcoinApi auth "validateaddress" [toValue addr]
     return AddressValidation
         { isValid = bool False "isvalid" result
         , isMine  = bool False "ismine"  result
@@ -280,7 +284,6 @@ validateAddress auth addr = do
   where
     bool d k r = maybe d (\(Bool b)->b) $ M.lookup k r
     str  d k r = maybe d (\(String t)->T.unpack t) $ M.lookup k r
-    vaddr = String $ fromString $ show addr
 
 -- | Returns true if the RPC says the address is valid.
 -- (This function only makes sense until 'mkBitcoinAddress' does
