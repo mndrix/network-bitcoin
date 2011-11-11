@@ -6,6 +6,7 @@ module Network.Bitcoin
       BitcoinAuth(..)
     , BitcoinAddress
     , mkBitcoinAddress
+    , AddressValidation
     , BitcoinAmount
     , BitcoinException(..)
 
@@ -256,32 +257,33 @@ getReceivedByAddress auth addr conf =
     vaddr = String $ fromString $ show addr
     vconf = Number $ fromInteger conf
 
+-- | Encapsulates address validation results from 'validateAddress'
+data AddressValidation = AddressValidation
+    { isValid :: Bool
+    , isMine  :: Bool
+    , account :: AccountName
+    } deriving (Show)
+
 -- | Return information about an address.
---
--- > let (isValid,isMine,account) = validateAddress auth address
---
 -- If the address is invalid or doesn't belong to us, the account name
 -- is the empty string.
 validateAddress :: BitcoinAuth
                 -> BitcoinAddress
-                -> IO (Bool, Bool, AccountName)
+                -> IO AddressValidation
 validateAddress auth addr = do
     (Object result) <- callBitcoinApi auth "validateaddress" [vaddr]
-    case fromJust $ M.lookup "isvalid" result of
-        Bool False -> return (False,False,"")
-        Bool True ->
-            case fromJust $ M.lookup "ismine" result of
-                Bool False -> return (True,False,"")
-                Bool True -> do
-                    let (String acct) = fromJust $ M.lookup "account" result
-                    return (True,True,T.unpack acct)
+    return AddressValidation
+        { isValid = bool False "isvalid" result
+        , isMine  = bool False "ismine"  result
+        , account = str  ""    "account" result
+        }
   where
+    bool d k r = maybe d (\(Bool b)->b) $ M.lookup k r
+    str  d k r = maybe d (\(String t)->T.unpack t) $ M.lookup k r
     vaddr = String $ fromString $ show addr
 
 -- | Returns true if the RPC says the address is valid.
 -- (This function only makes sense until 'mkBitcoinAddress' does
 -- full address verification)
 isValidAddress :: BitcoinAuth -> BitcoinAddress -> IO Bool
-isValidAddress auth addr = validateAddress auth addr >>= isValid
-  where
-    isValid (t,_,_) = return t
+isValidAddress auth addr = validateAddress auth addr >>= return . isValid
