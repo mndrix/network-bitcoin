@@ -16,6 +16,8 @@ module Network.Bitcoin
     , getConnectionCount
     , getDifficulty
     , getHashesPerSec
+    , getReceivedByAccount
+    , getReceivedByAddress
 
     -- * Low-level API
     , callBitcoinApi
@@ -214,3 +216,27 @@ getDifficulty = callNumber "getdifficulty" []
 -- generating
 getHashesPerSec :: BitcoinAuth -> IO Integer
 getHashesPerSec = callNumber "gethashespersec" []
+
+-- | Returns the total amount received by addresses with the given
+-- account in transactions with at least 'minconf' confirmations
+getReceivedByAccount :: BitcoinAuth
+                     -> AccountName
+                     -> MinConf
+                     -> IO BitcoinAmount
+getReceivedByAccount auth acct conf =
+    callNumber "getreceivedbyaccount" [vacct,vconf] auth
+  where
+    vacct = String $ fromString acct
+    vconf = Number $ fromInteger conf
+
+-- | Returns the total amount received by an address in transactions
+-- with at least 'minconf' confirmations.
+getReceivedByAddress :: BitcoinAuth
+                     -> BitcoinAddress
+                     -> MinConf
+                     -> IO BitcoinAmount
+getReceivedByAddress auth addr conf =
+    callNumber "getreceivedbyaddress" [vaddr,vconf] auth
+  where
+    vaddr = String $ fromString $ show addr
+    vconf = Number $ fromInteger conf
