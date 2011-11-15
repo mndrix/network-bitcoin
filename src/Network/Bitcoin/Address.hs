@@ -27,4 +27,6 @@ mkAddress s =
         else Nothing
   where -- TODO validate address checksum (write base58 module first)
     isOK ('1':_) = (length s >= 25) && (length s <= 34)
+    isOK ('m':_) = (length s >= 26) && (length s <= 34)
+    isOK ('n':_) = (length s >= 26) && (length s <= 34)
     isOK _       = False
