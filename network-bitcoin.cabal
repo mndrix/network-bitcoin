@@ -93,6 +93,10 @@ Library
   
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         
+
+Test-suite test-main
+    type: exitcode-stdio-1.0
+    main-is: test-main.hs
   
 Source-repository head
     type: git
