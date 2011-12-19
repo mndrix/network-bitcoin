@@ -17,6 +17,7 @@ module Network.Bitcoin
     , isMine
     , account
     , BitcoinException(..)
+    , Satoshi(..)
 
     -- * Individual API methods
     , getBalance
@@ -32,6 +33,8 @@ module Network.Bitcoin
 
     -- * Low-level API
     , callApi
+    , FromNumber
+    , fromNumber
     ) where
 import Network.Bitcoin.Address
 
@@ -53,7 +56,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as M
 import qualified Data.Text as T
 
--- Define Bitcoin's internal precision
+-- | Defines Bitcoin's internal precision
 data Satoshi = Satoshi
 instance HasResolution Satoshi where
     resolution _ = 10^(8::Integer)
@@ -167,7 +170,7 @@ buildBtcError (Object o) = BitcoinApiError code msg
           msg  = find "message" o
 buildBtcError _ = error "Need an object to buildBtcError"
 
--- Convert JSON numeric values to more specific numeric types
+-- | Convert JSON numeric values to more specific numeric types
 class FromNumber a where
     fromNumber :: Number -> a
 instance FromNumber Amount where
