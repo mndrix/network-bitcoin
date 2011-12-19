@@ -57,9 +57,11 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 
 -- | Defines Bitcoin's internal precision
+satoshis :: Integer
+satoshis = 10^(8::Integer)
 data Satoshi = Satoshi
 instance HasResolution Satoshi where
-    resolution _ = 10^(8::Integer)
+    resolution _ = satoshis
 
 -- | Fixed precision Bitcoin amount (to avoid floating point errors)
 type Amount = Fixed Satoshi
