@@ -46,6 +46,7 @@ import Data.Attoparsec
 import Data.Attoparsec.Number
 import Data.Fixed
 import Data.Maybe (fromJust)
+import Data.Ratio ((%))
 import Data.String (fromString)
 import Data.Typeable
 import Network.Browser
@@ -177,7 +178,9 @@ class FromNumber a where
     fromNumber :: Number -> a
 instance FromNumber Amount where
     fromNumber (I i) = fromInteger i
-    fromNumber (D d) = fromRational $ toRational d
+    fromNumber (D d) = fromRational $ numerator % satoshis
+      where
+        numerator = round $ d * (fromInteger satoshis)
 instance FromNumber Integer where
     fromNumber (I i) = i
     fromNumber (D d) = round d
