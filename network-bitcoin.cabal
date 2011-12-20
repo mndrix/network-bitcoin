@@ -7,7 +7,7 @@ Name:                network-bitcoin
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             0.1.4
+Version:             0.1.5
 
 -- A short (one-line) description of the package.
 Synopsis:            Interface with Bitcoin RPC
@@ -27,6 +27,10 @@ Description:
     >    auth = Auth "http://127.0.0.1:8332" "user" "password"
     .
     To learn more about Bitcoin, see <http://www.bitcoin.org>.
+    .
+    Changes in v0.1.5
+    .
+    - Correct aeson dependency
     .
     Changes in v0.1.4
     .
