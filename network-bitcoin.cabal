@@ -75,7 +75,7 @@ Library
   
   -- Packages needed in order to build this package.
   Build-depends:       
-    aeson >= 0.3,
+    aeson == 0.3.*,
     attoparsec >= 0.7,
     bytestring >= 0.9,
     containers >= 0.4,
